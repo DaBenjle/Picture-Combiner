@@ -4,6 +4,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -17,19 +18,20 @@ public class Main implements ActionListener
 	{
 		new Main();
 	}
-	
+
 	private ButtonGroup group;
-	
+
 	public Main()
 	{
 		initFrame();
 	}
-	
+
 	private void initFrame()
 	{
 		JFrame frame = new JFrame("Image Combiner");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		int width = 300; int height = 100;
+		int width = 300;
+		int height = 100;
 		frame.setPreferredSize(new Dimension(width, height));
 		frame.setVisible(true);
 		GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -38,32 +40,43 @@ public class Main implements ActionListener
 		frame.setLocation(sWidth / 2 - width / 2, sHeight / 2 - height / 2);
 		frame.pack();
 		frame.repaint();
-		
+
 		JPanel panel = new JPanel(new GridLayout(0, 1, 0, 5));
-		
+
 		JPanel bPanel = new JPanel(new GridLayout(0, 2, 5, 0));
 		group = new ButtonGroup();
-		JRadioButtonMenuItem google = new JRadioButtonMenuItem("Search Google", true);
-		google.setActionCommand("google");
-		JRadioButtonMenuItem intake = new JRadioButtonMenuItem("Use Intake Folder");
+		JRadioButtonMenuItem intake = new JRadioButtonMenuItem("Use Intake Folder", true);
 		intake.setActionCommand("intake");
-		group.add(google);
+		JRadioButtonMenuItem google = new JRadioButtonMenuItem("Search Google");
+		google.setActionCommand("google");
 		group.add(intake);
-		bPanel.add(google);
+		group.add(google);
 		bPanel.add(intake);
-		
+		bPanel.add(google);
+
 		JButton start = new JButton("Start");
 		start.addActionListener(this);
-		
+
 		panel.add(bPanel);
 		panel.add(start);
-		
+
 		frame.add(panel);
+		frame.validate();
+		frame.repaint();
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e)
 	{
-		System.out.println(group.getSelection().getActionCommand());
+		switch (group.getSelection().getActionCommand())
+		{
+			case "intake":
+				Intake.setFolder(new File("/Intake")).run();
+				break;
+				
+			case "google":
+				//TODO
+				break;
+		}
 	}
 }
