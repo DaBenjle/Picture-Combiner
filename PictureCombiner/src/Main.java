@@ -71,7 +71,7 @@ public class Main implements ActionListener
 		switch (group.getSelection().getActionCommand())
 		{
 			case "intake":
-				Intake.setFolder(new File("/Intake")).run();
+				Intake.setFolder(new File("Intake")).run();
 				break;
 				
 			case "google":
