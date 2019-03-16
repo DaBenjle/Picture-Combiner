@@ -1,6 +1,4 @@
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
@@ -8,15 +6,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
+import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JTextField;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 public class Main implements ActionListener
 {
@@ -29,6 +30,7 @@ public class Main implements ActionListener
 	private JFrame frame;
 	private boolean clickedFrame = false;
 	private static GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+	private BufferedImage target;
 
 	public Main()
 	{
@@ -65,6 +67,7 @@ public class Main implements ActionListener
 		panel.add(start);
 
 		frame.add(panel);
+		frame.pack();
 		frame.repaint();
 	}
 
@@ -76,41 +79,50 @@ public class Main implements ActionListener
 			updateFrame("Downloading images from Google.");
 			//TODO Fill intake folder with images from google
 		}
-		updateFrame("Getting average colors of images. (This may take a few minutes)");
-		Intake.setFolder(new File("Intake")).run();
-		
-		final int width = 50, height = 100;
-		BufferedImage bi = new BufferedImage(Intake.getColors().length / 3 * width, height, BufferedImage.TYPE_3BYTE_BGR);
-		for(int i = 0; i < Intake.getColors().length / 3; i++)
+		if(setTarget() && setIntake())
 		{
-			int blue = Intake.getColors()[i * 3] & 0xff, green = Intake.getColors()[i * 3 + 1] & 0xff, red = Intake.getColors()[i * 3 + 2] & 0xff;
-			Graphics2D g = bi.createGraphics();
-			g.setColor(new java.awt.Color(red, green, blue));
-			g.fillRect(i * width, 0, width, height);
+			
 		}
-		
-		JPanel temp = new JPanel()
+	}
+	
+	private boolean setTarget()
+	{
+		updateFrame("Attempting to set Target File");
+		try
 		{
-			public void paint(Graphics g)
+			try
 			{
-				g.drawImage(bi, 0, 0, bi.getWidth(), bi.getHeight(), null);
+				target = ImageIO.read(new File("Target.png"));
 			}
-		};
-		updateFrame("Done", temp);
+			catch(IOException ex)
+			{
+				target = ImageIO.read(new File("Target.jpg"));
+			}
+		}
+		catch (IOException e)
+		{
+			updateFrame("Target file not found!\nCancelling operations!");
+			return false;
+		}
+		updateFrame("Done");
+		return true;
+	}
+	
+	private boolean setIntake()
+	{
+		updateFrame("Getting average colors of images. (This may take a few minutes)");
+		boolean check = Intake.setFolder(new File("Intake")).run();
+		if(!check)
+		{
+			updateFrame((String.format("Not enough input files! You need at least %s files!", "5")));
+		}
+		updateFrame("Done");
+		return true;
 	}
 	
 	private void updateFrame(String message)
 	{
-		JComponent comp = null;
-		try
-		{
-			comp = (JComponent)frame.getComponent(1);
-		}
-		catch(Exception ex)
-		{
-			
-		}
-		updateFrame(message, comp);
+		updateFrame(message, null);
 	}
 	
 	private void updateFrame(String message, JComponent comp)
@@ -118,18 +130,19 @@ public class Main implements ActionListener
 		if(!clickedFrame)
 		{
 			Arrays.asList(frame.getContentPane().getComponents()).forEach((component) -> {frame.getContentPane().remove(component);});
-			frame.getContentPane().add(new JTextField());
+			frame.getContentPane().add(new JScrollPane(new JTextArea(), JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
 			smartFrameSetSize(800, 500);
 			clickedFrame = true;
 		}
 		
-		if(frame.getContentPane().getComponent(0) instanceof JTextField)
+		if(frame.getContentPane().getComponent(0) instanceof JScrollPane)
 		{
-			((JTextField) frame.getContentPane().getComponent(0)).setText(message);
+			JScrollPane scrollPane = (JScrollPane) frame.getContentPane().getComponent(0);
+			((JTextArea)scrollPane.getViewport().getView()).append(message + '\n');
 		}
-		if(comp != null) frame.getContentPane().add(comp, 1);
+		if(comp != null) frame.getContentPane().add(comp);
 		frame.pack();
-		frame.repaint();
+		frame.paint(frame.getGraphics());
 	}
 	
 	private void smartFrameSetSize(int width, int height)
@@ -138,5 +151,7 @@ public class Main implements ActionListener
 		int sWidth = gd.getDisplayMode().getWidth();
 		int sHeight = gd.getDisplayMode().getHeight();
 		frame.setLocation(sWidth / 2 - width / 2, sHeight / 2 - height / 2);
+		frame.pack();
+		frame.repaint();
 	}
 }

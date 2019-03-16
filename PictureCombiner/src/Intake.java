@@ -1,5 +1,4 @@
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -17,9 +16,14 @@ public class Intake
 		
 	}
 	
-	public void run()
+	public boolean run()
 	{
 		File[] files = folder.listFiles();
+		//TODO Implement proper file number check
+		if(files.length < 1)
+		{
+			return false;
+		}
 		colors = new byte[files.length * 3];
 		Arrays.sort(files);
 		for(int i = 0; i < files.length; i++)
@@ -35,16 +39,14 @@ public class Intake
 			} 
 			catch (IOException e)
 			{
-				e.printStackTrace();
-			}
-			
-			if(bi == null)
 				continue;
-			byte[] cols = getMeanColor(bi);
+			}
+			byte[] cols = ColorMethods.getMeanColor(bi);
 			colors[i * 3] = cols[0];//blue
 			colors[i * 3 + 1] = cols[1];//green
 			colors[i * 3 + 2] = cols[2];//red
 		}
+		return true;
 	}
 	
 	public static Intake getInstance()
@@ -68,27 +70,5 @@ public class Intake
 		return instance;
 	}
 	
-	public static byte[] getMeanColor(BufferedImage bi)
-	{
-		if(bi.getType() != BufferedImage.TYPE_3BYTE_BGR) throw new IllegalArgumentException();
-		Double avgB = 0.0, avgG = 0.0, avgR = 0.0;
-		byte[] pixels = ((DataBufferByte)bi.getRaster().getDataBuffer()).getData();
-		for(int curPixelSet = 0; curPixelSet < pixels.length; curPixelSet += 3)
-		{
-			byte red = pixels[curPixelSet + 2];
-			byte green = pixels[curPixelSet + 1];
-			byte blue = pixels[curPixelSet];
-			avgB = ((avgB * curPixelSet) + (blue & 0xFF)) / (curPixelSet + 1);
-			avgG = ((avgG * curPixelSet) + (green & 0xFF)) / (curPixelSet + 1);
-			avgR = ((avgR * curPixelSet) + (red & 0xFF)) / (curPixelSet + 1);
-		}
-		
-		int roundedB = (int)(avgB + .5), roundedG = (int)(avgG + .5), roundedR = (int)(avgR + .5);
-		return new byte[] {(byte) roundedB, (byte) roundedG, (byte) roundedR};
-	}
 	
-	public static String getByteString(byte input)
-	{
-		return String.format("%8s", Integer.toBinaryString(input & 0xFF)).replace(' ', '0');
-	}
 }
