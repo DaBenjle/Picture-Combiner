@@ -1,29 +1,28 @@
-import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
-public class Intake extends Thread
+public class Intake
 {
 	private static Intake instance;
 	private File folder = null;
-	private Color[] colors;
+	private byte[] colors;
 	
 	private Intake()
 	{
 		
 	}
 	
-	@Override
 	public void run()
 	{
-		super.run();
-		colors = new Color[folder.listFiles().length];
 		File[] files = folder.listFiles();
-		for(int i = 0; i < colors.length; i++)
+		colors = new byte[files.length * 3];
+		Arrays.sort(files);
+		for(int i = 0; i < files.length; i++)
 		{
 			BufferedImage bi = null;
 			try
@@ -41,8 +40,10 @@ public class Intake extends Thread
 			
 			if(bi == null)
 				continue;
-			//colors[i] = bi.getMeanColor();
-			getMeanColor(bi);
+			byte[] cols = getMeanColor(bi);
+			colors[i * 3] = cols[0];//blue
+			colors[i * 3 + 1] = cols[1];//green
+			colors[i * 3 + 2] = cols[2];//red
 		}
 	}
 	
@@ -50,6 +51,11 @@ public class Intake extends Thread
 	{
 		if(instance == null) instance = new Intake();
 		return instance;
+	}
+	
+	public static byte[] getColors()
+	{
+		return getInstance().colors;
 	}
 	
 	public static Intake setFolder(File input) throws IllegalArgumentException
@@ -62,20 +68,23 @@ public class Intake extends Thread
 		return instance;
 	}
 	
-	public static void getMeanColor(BufferedImage bi)
+	public static byte[] getMeanColor(BufferedImage bi)
 	{
 		if(bi.getType() != BufferedImage.TYPE_3BYTE_BGR) throw new IllegalArgumentException();
-		int rBucket = 0; int gBucket = 0; int bBucket = 0;
+		Double avgB = 0.0, avgG = 0.0, avgR = 0.0;
 		byte[] pixels = ((DataBufferByte)bi.getRaster().getDataBuffer()).getData();
 		for(int curPixelSet = 0; curPixelSet < pixels.length; curPixelSet += 3)
 		{
 			byte red = pixels[curPixelSet + 2];
-			System.out.println("Red: " + getByteString(red));
 			byte green = pixels[curPixelSet + 1];
-			System.out.println("Green: " + getByteString(green));
 			byte blue = pixels[curPixelSet];
-			System.out.println("Blue: " + getByteString(blue));
+			avgB = ((avgB * curPixelSet) + (blue & 0xFF)) / (curPixelSet + 1);
+			avgG = ((avgG * curPixelSet) + (green & 0xFF)) / (curPixelSet + 1);
+			avgR = ((avgR * curPixelSet) + (red & 0xFF)) / (curPixelSet + 1);
 		}
+		
+		int roundedB = (int)(avgB + .5), roundedG = (int)(avgG + .5), roundedR = (int)(avgR + .5);
+		return new byte[] {(byte) roundedB, (byte) roundedG, (byte) roundedR};
 	}
 	
 	public static String getByteString(byte input)
