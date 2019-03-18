@@ -8,6 +8,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
@@ -79,10 +81,19 @@ public class Main implements ActionListener
 			updateFrame("Downloading images from Google.");
 			//TODO Fill intake folder with images from google
 		}
-		if(setTarget() && setIntake())
+		boolean success = setTarget() && setIntake();
+		int intSuccess = success ? 1 : 2;
+		if(success)
 		{
-			
+			updateFrame("Finished with 0 errors");
 		}
+		new Timer().schedule(new TimerTask()
+				{
+					public void run()
+					{
+						System.exit(intSuccess);
+					}
+				}, 10000);
 	}
 	
 	private boolean setTarget()
