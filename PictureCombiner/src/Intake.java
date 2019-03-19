@@ -9,6 +9,7 @@ public class Intake
 {
 	private static Intake instance;
 	private File folder = null;
+	private File[] files = null;
 	private byte[] colors;
 	
 	private Intake()
@@ -16,13 +17,14 @@ public class Intake
 		
 	}
 	
-	public boolean run()
+	//TODO Make colors a file instead of memory, but it IS efficient memory
+	public String run()
 	{
-		File[] files = folder.listFiles();
+		files = folder.listFiles();
 		//TODO Implement proper file number check
-		if(files.length < 1)
+		if(files.length < 5)
 		{
-			return false;
+			return null;
 		}
 		colors = new byte[files.length * 3];
 		Arrays.sort(files);
@@ -39,20 +41,30 @@ public class Intake
 			} 
 			catch (IOException e)
 			{
-				continue;
+				return files[i].getPath();
 			}
 			byte[] cols = ColorMethods.getMeanColor(bi);
 			colors[i * 3] = cols[0];//blue
 			colors[i * 3 + 1] = cols[1];//green
 			colors[i * 3 + 2] = cols[2];//red
 		}
-		return true;
+		return "";
 	}
 	
 	public static Intake getInstance()
 	{
 		if(instance == null) instance = new Intake();
 		return instance;
+	}
+	
+	public static File[] getContents()
+	{
+		return getInstance().files;
+	}
+	
+	public static File getFolder()
+	{
+		return getInstance().folder;
 	}
 	
 	public static byte[] getColors()

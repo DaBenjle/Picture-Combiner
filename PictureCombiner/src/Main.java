@@ -2,9 +2,11 @@ import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,6 +35,7 @@ public class Main implements ActionListener
 	private boolean clickedFrame = false;
 	private static GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 	private BufferedImage target;
+	private byte[][][] targetPixels, finishedPixels;
 
 	public Main()
 	{
@@ -81,11 +84,15 @@ public class Main implements ActionListener
 			updateFrame("Downloading images from Google.");
 			//TODO Fill intake folder with images from google
 		}
-		boolean success = setTarget() && setIntake();
-		int intSuccess = success ? 1 : 2;
+		boolean success = setTarget() && setIntake() && resizeImages() && setOutput();
+		int intSuccess = success ? 0 : -1;
 		if(success)
 		{
 			updateFrame("Finished with 0 errors");
+		}
+		else
+		{
+			updateFrame("Cancelled operations due to errors.");
 		}
 		new Timer().schedule(new TimerTask()
 				{
@@ -94,6 +101,68 @@ public class Main implements ActionListener
 						System.exit(intSuccess);
 					}
 				}, 10000);
+	}
+	
+	private boolean resizeImages()
+	{
+		updateFrame("Copying images into buffer and resizing them. (This may take a few minutes)");
+		File buffer = new File("IntakeBuffer");
+		if(buffer.exists())
+		{
+			if(!buffer.isDirectory())
+			{
+				updateFrame("Delete file in working directory \"IntakeBuffer\"");
+				return false;
+			}
+		}
+		else
+		{
+			if(!buffer.mkdir())
+			{
+				updateFrame("Error creating directory \"IntakeBuffer\"");
+			}
+		}
+		
+		
+		for(File f : Intake.getContents())
+		{
+			try
+			{
+				BufferedImage pic = ImageIO.read(f);
+				//TODO Change 100s to proper size
+				BufferedImage scaled = new BufferedImage(100, 100, BufferedImage.TYPE_3BYTE_BGR);
+				scaled.createGraphics().drawImage(pic, 0, 0, 100, 100, null);
+				ImageIO.write(scaled, "png", new File("IntakeBuffer/" + getEndOfPath(f.getPath())));
+			}
+			catch (IOException e)
+			{
+				updateFrame("Error copying pictures to buffer, please ensure all files in \"Intake\" are images.");
+				e.printStackTrace();
+				return false;
+			}	
+		}
+		
+		return true;
+	}
+	
+	private String getEndOfPath(String path)
+	{
+		String returnVal = "";
+		for(int i = 0; i < path.length(); i++)
+		{
+			char cur = path.charAt(i);
+			if(cur == '/' || cur == '\\')
+				returnVal = "";
+			else
+				returnVal += cur;
+		}
+		return returnVal;
+	}
+
+	private boolean setOutput()
+	{
+		BufferedImage out = new BufferedImage(targetPixels[0].length, targetPixels.length, BufferedImage.TYPE_3BYTE_BGR);
+		return true;
 	}
 	
 	private boolean setTarget()
@@ -109,23 +178,37 @@ public class Main implements ActionListener
 			{
 				target = ImageIO.read(new File("Target.jpg"));
 			}
+			final int width = target.getWidth(), height = target.getHeight();
+			BufferedImage newBi = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+			newBi.createGraphics().drawImage(target, 0, 0, width, height, null);
+			target = newBi;
 		}
 		catch (IOException e)
 		{
 			updateFrame("Target file not found!\nCancelling operations!");
 			return false;
 		}
-		updateFrame("Done");
+		
+
+		
+		updateFrame("Finished setting target file.\nAttempting to load target pixels.");
+		targetPixels = ColorMethods.rawArrTo3DArr(((DataBufferByte)target.getData().getDataBuffer()).getData(), target.getHeight(), target.getWidth(), 3);
+		updateFrame("Finished loading target pixels.");
 		return true;
 	}
 	
 	private boolean setIntake()
 	{
 		updateFrame("Getting average colors of images. (This may take a few minutes)");
-		boolean check = Intake.setFolder(new File("Intake")).run();
-		if(!check)
+		String check = Intake.setFolder(new File("Intake")).run();
+		if(check == null)
 		{
 			updateFrame((String.format("Not enough input files! You need at least %s files!", "5")));
+		}
+		else if(check.length() > 0)
+		{
+			updateFrame("Error reading " + check + " colors, please ensure all files in \"Intake\" are images.");
+			return false;
 		}
 		updateFrame("Done");
 		return true;
