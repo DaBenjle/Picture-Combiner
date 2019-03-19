@@ -1,10 +1,9 @@
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
@@ -15,15 +14,19 @@ import java.util.TimerTask;
 
 import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
+import javax.swing.InputVerifier;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.text.JTextComponent;
 
-public class Main implements ActionListener
+public class Main
 {
 	public static void main(String[] args)
 	{
@@ -32,6 +35,7 @@ public class Main implements ActionListener
 
 	private ButtonGroup group;
 	private JFrame frame;
+	private JPanel enable;
 	private boolean clickedFrame = false;
 	private static GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 	private BufferedImage target;
@@ -52,38 +56,121 @@ public class Main implements ActionListener
 		frame.pack();
 		frame.repaint();
 
-		JPanel panel = new JPanel(new GridLayout(0, 1, 0, 5));
+		JPanel startPanel = new JPanel(new GridLayout(0, 1, 0, 5));
 
-		JPanel bPanel = new JPanel(new GridLayout(0, 2, 5, 0));
-		group = new ButtonGroup();
-		JRadioButtonMenuItem intake = new JRadioButtonMenuItem("Use Intake Folder", true);
-		intake.setActionCommand("intake");
-		JRadioButtonMenuItem google = new JRadioButtonMenuItem("Search Google");
-		google.setActionCommand("google");
-		group.add(intake);
-		group.add(google);
-		bPanel.add(intake);
-		bPanel.add(google);
-
-		JButton start = new JButton("Start");
-		start.addActionListener(this);
-
-		panel.add(bPanel);
-		panel.add(start);
-
-		frame.add(panel);
+			JPanel intakePanel = new JPanel(new GridLayout(0, 2, 5, 0));
+			group = new ButtonGroup();
+			JRadioButtonMenuItem intake = new JRadioButtonMenuItem("Use Intake Folder", true);
+			intake.setActionCommand("intake");
+			JRadioButtonMenuItem google = new JRadioButtonMenuItem("Search Google");
+			google.setActionCommand("google");
+			group.add(intake);
+			group.add(google);
+			intakePanel.add(intake);
+			intakePanel.add(google);
+	
+			JButton start = new JButton("Start");
+			start.addActionListener((ActionEvent event) -> selectSettingsNowAction(event));
+	
+			startPanel.add(intakePanel);
+			startPanel.add(start);
+		
+		JPanel optionsPanel = new JPanel(new GridLayout(0, 2, 0, 5));
+			optionsPanel.setEnabled(false);
+			enable = optionsPanel;
+			
+			final JTextField repeats = new JTextField();
+			repeats.setBackground(new Color(245, 245, 245));
+			repeats.setInputVerifier(new InputVerifier()
+			{
+				@Override
+				public boolean verify(JComponent input)
+				{
+					return validate((JTextComponent)input, 1, 0, false);
+				}
+				
+				@Override
+				public boolean shouldYieldFocus(JComponent source, JComponent target)
+				{
+					if(!verify(source))
+					{
+						((JTextComponent)source).setText("");
+					}
+					return true;
+				}
+			});
+			final JTextField pixelsPerPicture = new JTextField();
+			pixelsPerPicture.setBackground(new Color(245, 245, 245));
+			pixelsPerPicture.setInputVerifier(new InputVerifier()
+			{
+				@Override
+				public boolean verify(JComponent input)
+				{
+					return validate((JTextComponent)input, 1, 1, true);
+				}
+				
+				@Override
+				public boolean shouldYieldFocus(JComponent source, JComponent target)
+				{
+					if(!verify(source))
+					{
+						((JTextComponent)source).setText("");
+					}
+					return true;
+				}
+			});
+			
+			optionsPanel.add(new JLabel("<html>How many times can images be used. Must be a positive integer. 0 Represents infinite uses.</html>"));
+			optionsPanel.add(repeats);
+			optionsPanel.add(new JLabel("<html>How many pixels per picture, must be squarerootable so that the width is an integer.</html>"));
+			optionsPanel.add(pixelsPerPicture);
+			
+		frame.getContentPane().add(startPanel);
 		frame.pack();
 		frame.repaint();
 	}
+	
+	/*
+	 * Resets text if its not an integer and if its not within the range (min inclusive, max exclusive).
+	 * If you set max to 0 it will be an infinite value as well as adding functionality for the user to input 0 to mean infinite as well.
+	 * If you set min = to max then max will be an infinite value, but it will not accept 0s.
+	 */
+	public static boolean validate(JTextComponent comp, int min, int max, boolean squareRoot)
+	{
+		int val;
+		if(max == 0)
+		{
+			max = Integer.MAX_VALUE;
+		}
+		try
+		{
+			val = Integer.parseInt(comp.getText());
+		}
+		catch(NumberFormatException e)
+		{
+			return false;
+		}
+		if(squareRoot)
+			if(Math.sqrt(val) != (int)Math.sqrt(val))
+				return false;
+		if(min == max)
+			return val >= min;
+		return (max == Integer.MAX_VALUE && val == 0) || (val >= min && val < max);
+	}
 
-	@Override
-	public void actionPerformed(ActionEvent e)
+	private void selectSettingsNowAction(ActionEvent e)
 	{
 		if(group.getSelection().getActionCommand().equals("google"))
 		{
 			updateFrame("Downloading images from Google.");
 			//TODO Fill intake folder with images from google
 		}
+		updateFrame("Please change settings as needed ->");
+		frame.add(enable);
+	}
+	
+	private void startAction()
+	{
 		boolean success = setTarget() && setIntake() && resizeImages() && setOutput();
 		int intSuccess = success ? 0 : -1;
 		if(success)
@@ -161,7 +248,7 @@ public class Main implements ActionListener
 
 	private boolean setOutput()
 	{
-		BufferedImage out = new BufferedImage(targetPixels[0].length, targetPixels.length, BufferedImage.TYPE_3BYTE_BGR);
+		//BufferedImage out = new BufferedImage(targetPixels[0].length, targetPixels.length, BufferedImage.TYPE_3BYTE_BGR);
 		return true;
 	}
 	
@@ -224,8 +311,10 @@ public class Main implements ActionListener
 		if(!clickedFrame)
 		{
 			Arrays.asList(frame.getContentPane().getComponents()).forEach((component) -> {frame.getContentPane().remove(component);});
-			frame.getContentPane().add(new JScrollPane(new JTextArea(), JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
-			smartFrameSetSize(800, 500);
+			JTextArea area = new JTextArea();
+			area.setBackground(new Color(220, 220, 220));
+			frame.getContentPane().add(new JScrollPane(area, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+			smartFrameSetSize(1000, 200);
 			clickedFrame = true;
 		}
 		
