@@ -35,7 +35,6 @@ public class Main
 
 	private ButtonGroup group;
 	private JFrame frame;
-	private JPanel enable;
 	private boolean clickedFrame = false;
 	private static GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 	private BufferedImage target;
@@ -75,55 +74,7 @@ public class Main
 			startPanel.add(intakePanel);
 			startPanel.add(start);
 		
-		JPanel optionsPanel = new JPanel(new GridLayout(0, 2, 0, 5));
-			optionsPanel.setEnabled(false);
-			enable = optionsPanel;
-			
-			final JTextField repeats = new JTextField();
-			repeats.setBackground(new Color(245, 245, 245));
-			repeats.setInputVerifier(new InputVerifier()
-			{
-				@Override
-				public boolean verify(JComponent input)
-				{
-					return validate((JTextComponent)input, 1, 0, false);
-				}
-				
-				@Override
-				public boolean shouldYieldFocus(JComponent source, JComponent target)
-				{
-					if(!verify(source))
-					{
-						((JTextComponent)source).setText("");
-					}
-					return true;
-				}
-			});
-			final JTextField pixelsPerPicture = new JTextField();
-			pixelsPerPicture.setBackground(new Color(245, 245, 245));
-			pixelsPerPicture.setInputVerifier(new InputVerifier()
-			{
-				@Override
-				public boolean verify(JComponent input)
-				{
-					return validate((JTextComponent)input, 1, 1, true);
-				}
-				
-				@Override
-				public boolean shouldYieldFocus(JComponent source, JComponent target)
-				{
-					if(!verify(source))
-					{
-						((JTextComponent)source).setText("");
-					}
-					return true;
-				}
-			});
-			
-			optionsPanel.add(new JLabel("<html>How many times can images be used. Must be a positive integer. 0 Represents infinite uses.</html>"));
-			optionsPanel.add(repeats);
-			optionsPanel.add(new JLabel("<html>How many pixels per picture, must be squarerootable so that the width is an integer.</html>"));
-			optionsPanel.add(pixelsPerPicture);
+
 			
 		frame.getContentPane().add(startPanel);
 		frame.pack();
@@ -135,6 +86,28 @@ public class Main
 	 * If you set max to 0 it will be an infinite value as well as adding functionality for the user to input 0 to mean infinite as well.
 	 * If you set min = to max then max will be an infinite value, but it will not accept 0s.
 	 */
+	public static InputVerifier getValidater(int min, int max, boolean squareroot)
+	{
+		return new InputVerifier()
+		{
+			@Override
+			public boolean verify(JComponent input)
+			{
+				return validate((JTextComponent)input, min, max, squareroot);
+			}
+			
+			@Override
+			public boolean shouldYieldFocus(JComponent source)
+			{
+				if(!verify(source))
+				{
+					((JTextComponent)source).setText("");
+				}
+				return true;
+			}
+		};
+	}
+	
 	public static boolean validate(JTextComponent comp, int min, int max, boolean squareRoot)
 	{
 		int val;
@@ -166,7 +139,38 @@ public class Main
 			//TODO Fill intake folder with images from google
 		}
 		updateFrame("Please change settings as needed ->");
-		frame.add(enable);
+		
+		JPanel optionsPanel = new JPanel(new GridLayout(0, 2, 0, 5));
+			optionsPanel.setEnabled(false);
+			
+			final JTextField repeats = new JTextField();
+			repeats.setBackground(new Color(245, 245, 245));
+			repeats.setInputVerifier(getValidater(1, 0, false));
+			
+			final JTextField pixelsPerPicture = new JTextField();
+			pixelsPerPicture.setBackground(new Color(245, 245, 245));
+			pixelsPerPicture.setInputVerifier(getValidater(1, 1, true));
+			
+			final JButton start = new JButton();
+			start.addActionListener((ActionEvent startEvent) -> 
+			{
+				Boolean filled = true;
+				Arrays.asList(optionsPanel.getComponents()).forEach((Object o) -> 
+				{
+					if(o instanceof JTextField)
+						if(((JTextField)o).getText().equals(""))
+							System.out.print(true);
+				});
+			});
+			
+			optionsPanel.add(new JLabel("<html>How many times can images be used. Must be a positive integer. 0 Represents infinite uses.</html>"));
+			optionsPanel.add(repeats);
+			optionsPanel.add(new JLabel("<html>How many pixels per picture, must be squarerootable so that the width is an integer.</html>"));
+			optionsPanel.add(pixelsPerPicture);
+			optionsPanel.add(new JLabel("<html>Press when all fields are filled and you are ready to begin.</html>"));
+			optionsPanel.add(start);
+			
+		frame.add(optionsPanel);
 	}
 	
 	private void startAction()
