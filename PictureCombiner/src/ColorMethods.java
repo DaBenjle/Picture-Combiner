@@ -6,11 +6,10 @@ public class ColorMethods
 	/*
 	 * Assumes the input image is type: BufferedImage.TYPE_3BYTE_BGR
 	 */
-	public static byte[] getMeanColor(BufferedImage bi)
+	public static byte[] getMeanColor(byte[] pixels)
 	{
-		if(bi.getType() != BufferedImage.TYPE_3BYTE_BGR) throw new IllegalArgumentException();
+		
 		Double avgB = 0.0, avgG = 0.0, avgR = 0.0;
-		byte[] pixels = ((DataBufferByte)bi.getRaster().getDataBuffer()).getData();
 		for(int curPixelSet = 0; curPixelSet < pixels.length; curPixelSet += 3)
 		{
 			byte red = pixels[curPixelSet + 2];
@@ -23,6 +22,12 @@ public class ColorMethods
 		
 		int roundedB = (int)(avgB + .5), roundedG = (int)(avgG + .5), roundedR = (int)(avgR + .5);
 		return new byte[] {(byte) roundedB, (byte) roundedG, (byte) roundedR};
+	}
+	
+	public static byte[] getMeanColor(BufferedImage bi)
+	{
+		if(bi.getType() != BufferedImage.TYPE_3BYTE_BGR) throw new IllegalArgumentException();
+		return getMeanColor(((DataBufferByte)bi.getRaster().getDataBuffer()).getData());
 	}
 	
 	public static String getByteString(byte input)
@@ -68,5 +73,11 @@ public class ColorMethods
 			}
 		}
 		return targetPixels;
+	}
+	
+	public static int getClosestColor(byte[] targetColor, byte[] useableColors)
+	{
+		//TODO
+		return 0;
 	}
 }

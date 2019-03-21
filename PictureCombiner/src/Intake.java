@@ -18,7 +18,7 @@ public class Intake
 	}
 	
 	//TODO Make colors a file instead of memory, but it IS efficient memory
-	public String run()
+	public String run(Wrapper<Integer> minimumSideLengthWrapper)
 	{
 		files = folder.listFiles();
 		//TODO Implement proper file number check
@@ -28,6 +28,7 @@ public class Intake
 		}
 		colors = new byte[files.length * 3];
 		Arrays.sort(files);
+		int minimumSideLength = Integer.MAX_VALUE;
 		for(int i = 0; i < files.length; i++)
 		{
 			BufferedImage bi = null;
@@ -35,6 +36,8 @@ public class Intake
 			{
 				bi = ImageIO.read(files[i]);
 				final int width = bi.getWidth(), height = bi.getHeight();
+				if(width < minimumSideLength) minimumSideLength = width;
+				if(height < minimumSideLength) minimumSideLength = height;
 				BufferedImage newBi = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 				newBi.createGraphics().drawImage(bi, 0, 0, width, height, null);
 				bi = newBi;
@@ -48,6 +51,7 @@ public class Intake
 			colors[i * 3 + 1] = cols[1];//green
 			colors[i * 3 + 2] = cols[2];//red
 		}
+		minimumSideLengthWrapper.val = minimumSideLength;
 		return "";
 	}
 	
